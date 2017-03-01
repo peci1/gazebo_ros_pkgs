@@ -43,20 +43,19 @@ class ROSPackageURISchemeResolver : public common::URISchemeResolver
     return "model";
   }
 
-  public: virtual std::string ResolveURI(const std::string &_uri)
+  public: virtual std::string ResolveURI(const gazebo::common::URI &_uri)
   {
-    int index = _uri.find("://");
     std::string filename;
-    std::string prefix = _uri.substr(0, index);
+    std::string prefix = _uri.Scheme();
 
     if (prefix != "model")
     {
-        gzerr << "URI " << _uri << " with scheme '" << prefix
+        gzerr << "URI " << _uri.Str() << " with scheme '" << prefix
               << "' given to a resolver for scheme 'model'" << std::endl;
         return filename;
     }
 
-    std::string suffix = _uri.substr(index + 3, _uri.size() - index - 3);
+    std::string suffix = _uri.Path().Str() + _uri.Query().Str();
     int firstSlashIndex = suffix.find("/");
 
     if (firstSlashIndex == suffix.npos)
@@ -75,7 +74,7 @@ class ROSPackageURISchemeResolver : public common::URISchemeResolver
 
     filename = (boost::filesystem::path(packagePath) / pathInPackage).string();
 
-    gzdbg << "Resolved " << _uri << " to " << filename << std::endl;
+    gzdbg << "Resolved " << _uri.Str() << " to " << filename << std::endl;
 
     return filename;
   }
@@ -141,7 +140,7 @@ public:
     std::string gazeborc = ros::package::getPath("gazebo_ros")+"/.do_not_use_gazeborc";
     setenv("GAZEBORC",gazeborc.c_str(),1);
 
-    gazebo::common::URISchemeResolverPtr resolver;
+    std::shared_ptr<ROSPackageURISchemeResolver> resolver;
     resolver.reset(new ROSPackageURISchemeResolver());
     gazebo::common::SystemPaths::Instance()->AddURISchemeResolver(resolver);
   }
